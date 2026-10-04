@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LA PIZZERIA DELLE FRAZIONI & DEL RESTO</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Google 'Fredoka' -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body {
+      font-family: 'Fredoka', cursive, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      background: #1e1b4b;
+    }
+    .text-uppercase { text-transform: uppercase; }
+
+    /* Animazione transizione pizze e ingredienti */
+    .ingredient-btn {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      touch-action: manipulation;
+    }
+    .ingredient-btn:active, .ingredient-btn.selected {
+      transform: scale(1.08);
+    }
+
+    .slice-hover {
+      transition: fill 0.2s ease, opacity 0.2s ease;
+      cursor: pointer;
+    }
+    .slice-hover:hover {
+      opacity: 0.85;
+      filter: brightness(1.1);
+    }
+
+    .btn-action {
+      touch-action: manipulation;
+      transition: all 0.1s ease;
+    }
+    .btn-action:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="min-h-screen text-white flex flex-col justify-between p-2 md:p-4 text-uppercase tracking-wide">
+
+  <!-- BARRA SUPERIORE / HEADER -->
+  <header class="max-w-7xl mx-auto w-full flex flex-wrap items-center justify-between gap-3 bg-indigo-900/90 p-3 md:p-4 rounded-3xl border-4 border-amber-400 shadow-2xl">
+    
+    <!-- TITOLO -->
+    <div class="flex items-center gap-2">
+      <span class="text-3xl md:text-4xl">🍕</span>
+      <div>
+        <h1 class="text-xl md:text-3xl font-black text-amber-300 leading-none">
+          LA PIZZERIA MATEMATICA!
+        </h1>
+        <p class="text-xs md:text-sm text-amber-200 font-bold mt-1">
+          IMPARA LE FRAZIONI E CALCOLA IL RESTO!
+        </p>
+      </div>
+    </div>
+
+    <!-- PUNTEGGIO / INCASSO & NUOVA PARTITA -->
+    <div class="flex items-center gap-3">
+      <div class="bg-indigo-950 px-4 py-2 rounded-2xl border-2 border-emerald-400 flex items-center gap-2">
+        <span class="text-xl md:text-2xl">💰</span>
+        <div>
+          <div class="text-[10px] text-emerald-300 font-bold">INCASSO TOTALE:</div>
+          <div id="scoreDisplay" class="text-xl md:text-3xl font-black text-emerald-400">0,00 €</div>
+        </div>
+      </div>
+
+      <button onclick="nuovaPartita()" class="btn-action bg-amber-500 hover:bg-amber-400 text-indigo-950 font-black text-sm md:text-base px-4 py-3 rounded-2xl border-b-4 border-amber-700 shadow-lg flex items-center gap-1.5">
+        <span>🔄</span> NUOVA PARTITA
+      </button>
+    </div>
+  </header>
+
+  <!-- AREA DI GIOCO PRINCIPALE (3 COLONNE) -->
+  <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-3 my-2 flex-grow">
+    
+    <!-- COLONNA 1: CONTENITORI INGREDIENTI (3 COLONNE / LATO SINISTRO) -->
+    <section class="lg:col-span-3 bg-indigo-900/80 p-3 rounded-3xl border-4 border-indigo-400 flex flex-col justify-between shadow-xl">
+      <div>
+        <h2 class="text-base md:text-lg font-black text-amber-300 text-center mb-2 flex items-center justify-center gap-2">
+          <span>🥫</span> INGREDIENTI
+        </h2>
+        <p class="text-[11px] text-indigo-200 text-center font-bold mb-3">
+          SELEZIONA UN INGREDIENTE E TOCCA SULLA PIZZA!
+        </p>
+
+        <!-- GRIGLIA 8 INGREDIENTI -->
+        <div id="ingredientsContainer" class="grid grid-cols-2 gap-2">
+          <!-- Generati da JS -->
+        </div>
+      </div>
+
+      <!-- PULSANTE PULISCI PIZZA -->
+      <button onclick="pulisciPizza()" class="btn-action bg-rose-600 hover:bg-rose-500 text-white font-black text-sm py-2.5 rounded-2xl border-b-4 border-rose-900 shadow mt-3 flex items-center justify-center gap-2">
+        <span>🗑️️</span> SVUOTA PIZZA
+      </button>
+    </section>
+
+    <!-- COLONNA 2: AREA PIZZA & TAGLIO FRAZIONI (CENTRO) -->
+    <section class="lg:col-span-5 bg-indigo-900/80 p-3 rounded-3xl border-4 border-indigo-400 flex flex-col items-center justify-between shadow-xl relative">
+      
+      <!-- CONTROLLI FRAZIONE / CORTE PIZZA -->
+      <div class="w-full flex flex-col items-center gap-1.5">
+        <span class="text-xs font-black text-amber-300">DIVIDI LA PIZZA IN SPICCHI (FRAZIONI):</span>
+        <div class="flex gap-2">
+          <button onclick="setFrazione(2)" id="btnFrac2" class="btn-action bg-indigo-700 text-white font-black text-xs md:text-sm px-3 py-2 rounded-xl border-2 border-indigo-400 shadow">
+            1/2 (2 SPICCHI)
+          </button>
+          <button onclick="setFrazione(4)" id="btnFrac4" class="btn-action bg-amber-500 text-indigo-950 font-black text-xs md:text-sm px-3 py-2 rounded-xl border-2 border-yellow-300 shadow">
+            1/4 (4 SPICCHI)
+          </button>
+          <button onclick="setFrazione(8)" id="btnFrac8" class="btn-action bg-indigo-700 text-white font-black text-xs md:text-sm px-3 py-2 rounded-xl border-2 border-indigo-400 shadow">
+            1/8 (8 SPICCHI)
+          </button>
+        </div>
+      </div>
+
+      <!-- SVG PIZZA INTERATTIVA -->
+      <div class="relative w-64 h-64 md:w-80 md:h-80 my-3 flex items-center justify-center">
+        <!-- TEGLIA DI LEGNO / VASSOGLIO -->
+        <div class="absolute inset-0 bg-amber-800 rounded-full border-8 border-amber-950 shadow-2xl flex items-center justify-center"></div>
+
+        <!-- SVG PIZZA E SPICCHI -->
+        <svg id="pizzaSvg" class="relative w-full h-full p-2" viewBox="0 0 300 300">
+          <!-- Gli spicchi e gli ingredienti vengono disegnati via JS -->
+        </svg>
+      </div>
+
+      <!-- INFO PREZZO PIZZA CORRENTE -->
+      <div class="bg-indigo-950 px-4 py-1.5 rounded-xl border border-indigo-500 text-center">
+        <span class="text-xs text-indigo-200 font-bold">PREZZO PIZZA PREPARATA: </span>
+        <span id="pizzaPriceDisplay" class="text-base font-black text-amber-300">4,00 €</span>
+      </div>
+
+    </section>
+
+    <!-- COLONNA 3: CLIENTE, CASSA & RESTO (DESTRO) -->
+    <section class="lg:col-span-4 bg-indigo-900/80 p-3 rounded-3xl border-4 border-indigo-400 flex flex-col justify-between shadow-xl">
+      
+      <!-- AREA ORDINAZIONE CLIENTE -->
+      <div class="bg-indigo-950 p-3 rounded-2xl border-2 border-amber-400 mb-2">
+        <div class="flex items-center gap-3">
+          <!-- AVATAR CLIENTE -->
+          <div id="customerAvatar" class="text-4xl md:text-5xl bg-indigo-900 p-2 rounded-2xl border border-amber-300">
+            🐱
+          </div>
+          <div>
+            <div id="customerName" class="text-xs font-black text-amber-400">CLIENTE: GATTO TOM</div>
+            <div id="paymentInfo" class="text-xs text-emerald-300 font-bold">PAGA CON: 10,00 €</div>
+          </div>
+        </div>
+
+        <!-- FUMETTO RICHIESTA -->
+        <div class="mt-2 bg-amber-100 text-indigo-950 p-3 rounded-xl border-2 border-amber-300 relative font-bold text-xs md:text-sm">
+          <div class="text-[10px] text-amber-800 font-black mb-1">ORDINE DEL CLIENTE:</div>
+          <div id="customerOrderText" class="leading-tight">
+            "VORREI 2/4 DI PIZZA CON POMODORO E MOZZARELLA E 2/4 CON SALAME!"
+          </div>
+        </div>
+      </div>
+
+      <!-- CASSA & CALCOLO DEL RESTO -->
+      <div class="bg-indigo-950/80 p-3 rounded-2xl border border-indigo-500 flex-grow flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-black text-amber-300">CASSA (DAI IL RESTO):</span>
+            <button onclick="azzeraResto()" class="text-[10px] bg-rose-800 hover:bg-rose-700 px-2 py-0.5 rounded font-bold text-white">AZZERA RESTO</button>
+          </div>
+
+          <!-- TASTI MONETE E BANCONOTE -->
+          <div class="grid grid-cols-5 gap-1 my-2">
+            <button onclick="aggiungiResto(0.50)" class="btn-action bg-amber-600 hover:bg-amber-500 text-white font-black text-xs py-2 rounded-xl border-b-2 border-amber-800">0,50€</button>
+            <button onclick="aggiungiResto(1.00)" class="btn-action bg-amber-500 hover:bg-amber-400 text-indigo-950 font-black text-xs py-2 rounded-xl border-b-2 border-amber-700">1,00€</button>
+            <button onclick="aggiungiResto(2.00)" class="btn-action bg-amber-400 hover:bg-amber-300 text-indigo-950 font-black text-xs py-2 rounded-xl border-b-2 border-amber-600">2,00€</button>
+            <button onclick="aggiungiResto(5.00)" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs py-2 rounded-xl border-b-2 border-emerald-900">5,00€</button>
+            <button onclick="aggiungiResto(10.00)" class="btn-action bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs py-2 rounded-xl border-b-2 border-emerald-800">10,00€</button>
+          </div>
+
+          <!-- DISPLAY RESTO SELEZIONATO -->
+          <div class="bg-indigo-900 p-2 rounded-xl border border-indigo-400 text-center my-1">
+            <span class="text-[11px] text-indigo-200 font-bold">RESTO CHE STAI DANDO: </span>
+            <span id="restoGivenDisplay" class="text-lg font-black text-emerald-300">0,00 €</span>
+          </div>
+        </div>
+
+        <!-- PULSANTE CONSEGNA -->
+        <button onclick="consegnaOrdine()" class="btn-action w-full bg-emerald-500 hover:bg-emerald-400 text-indigo-950 font-black text-base py-3 rounded-2xl border-b-4 border-emerald-800 shadow-lg mt-2 flex items-center justify-center gap-2">
+          <span>✅</span> CONSEGNA PIZZA E RESTO
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODALE SCONFITTA / GAME OVER -->
+  <div id="gameOverModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="bg-indigo-900 border-8 border-rose-500 rounded-3xl p-6 max-w-lg w-full text-center shadow-2xl">
+      <div class="text-6xl mb-2">❌ 🍕</div>
+      <h2 class="text-3xl md:text-4xl font-black text-rose-400 mb-2">PARTITA TERMINATA!</h2>
+      <p id="gameOverReason" class="text-sm md:text-base text-white font-bold bg-indigo-950 p-4 rounded-2xl border border-rose-400 mb-4">
+        HAI SBAGLIATO L'ORDINE O IL RESTO!
+      </p>
+
+      <div class="bg-indigo-950 p-3 rounded-xl border border-indigo-500 mb-6">
+        <span class="text-xs text-indigo-300 font-bold">INCASSO FINALE OTTENUTO:</span>
+        <div id="finalScoreDisplay" class="text-4xl font-black text-emerald-400 my-1">0,00 €</div>
+      </div>
+
+      <button onclick="chiudiGameOverModal(); nuovaPartita();" class="btn-action w-full bg-amber-500 hover:bg-amber-400 text-indigo-950 font-black text-lg py-3 rounded-2xl border-b-4 border-amber-700 shadow-lg">
+        🔄 GIOCA ANCORA
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // --- LISTA INGREDIENTI CON PREZZI ED EMOJI ---
+    const ALL_INGREDIENTS = [
+      { id: 'pomodoro', name: 'POMODORO', emoji: '🍅', color: '#ef4444', price: 0.50 },
+      { id: 'mozzarella', name: 'MOZZARELLA', emoji: '🧀', color: '#fef08a', price: 0.50 },
+      { id: 'salame', name: 'SALAME', emoji: '🍕', color: '#b91c1c', price: 1.00 },
+      { id: 'peperone', name: 'PEPERONE', emoji: '🫑', color: '#22c55e', price: 0.80 },
+      { id: 'tonno', name: 'TONNO', emoji: '🐟', color: '#38bdf8', price: 1.00 },
+      { id: 'acciuga', name: 'ACCIUGA', emoji: '🐟', color: '#64748b', price: 0.80 },
+      { id: 'cipolla', name: 'CIPOLLA', emoji: '🧅', color: '#a855f7', price: 0.50 },
+      { id: 'ananas', name: 'ANANAS', emoji: '🍍', color: '#eab308', price: 1.20 }
+    ];
+
+    // CLIENTE RANDOM
+    const CLIENTS = [
+      { name: 'GATTO TOM', avatar: '🐱' },
+      { name: 'ORSETTO BARNY', avatar: '🐻' },
+      { name: 'VOLPE LUNA', avatar: '🦊' },
+      { name: 'ROBOT NANO', avatar: '🤖' },
+      { name: 'PANDA BAMBOO', avatar: '🐼' },
+      { name: 'CHEF LUIGI', avatar: '👨‍🍳' }
+    ];
+
+    // STATO DEL GIOCO
+    let incassoTotale = 0.00;
+    let selectedIngredient = null;
+    let numSpicchi = 4; // Frazione di default: 4 (1/4)
+    let spicchiData = []; // array per memorizzare ingredienti per ogni spicchio
+    let currentClient = null;
+    let currentOrder = null;
+    let restoDato = 0.00;
+
+    // AUDIO CON WEB AUDIO API
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+    }
+
+    function playSound(type) {
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.05);
+        } else if (type === 'add') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'cash') {
+          // Suono cassa
+          [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(f, now + i * 0.06);
+            g.gain.setValueAtTime(0.2, now + i * 0.06);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.2);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.2);
+          });
+        } else if (type === 'error') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.3);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(now); osc.stop(now + 0.3);
+        }
+      } catch(e) {}
+    }
+
+    // --- AVVIO GIOCO ---
+    window.onload = () => {
+      renderIngredientButtons();
+      nuovaPartita();
+    };
+
+    function nuovaPartita() {
+      incassoTotale = 0.00;
+      document.getElementById('scoreDisplay').innerText = "0,00 €";
+      prossimoCliente();
+    }
+
+    function renderIngredientButtons() {
+      const container = document.getElementById('ingredientsContainer');
+      container.innerHTML = '';
+
+      ALL_INGREDIENTS.forEach(ing => {
+        const btn = document.createElement('button');
+        btn.id = `ing-btn-${ing.id}`;
+        btn.className = "ingredient-btn bg-indigo-950 hover:bg-indigo-800 border-2 border-indigo-500 rounded-2xl p-2 flex flex-col items-center justify-center text-center shadow";
+        btn.onclick = () => selectIngredient(ing);
+
+        btn.innerHTML = `
+          <span class="text-2xl md:text-3xl">${ing.emoji}</span>
+          <span class="text-[11px] font-black text-amber-300 mt-1">${ing.name}</span>
+          <span class="text-[10px] text-emerald-400 font-bold">+${ing.price.toFixed(2)}€</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectIngredient(ing) {
+      playSound('click');
+      selectedIngredient = ing;
+      document.querySelectorAll('.ingredient-btn').forEach(b => b.classList.remove('border-amber-400', 'bg-indigo-800', 'selected'));
+      const activeBtn = document.getElementById(`ing-btn-${ing.id}`);
+      if (activeBtn) activeBtn.classList.add('border-amber-400', 'bg-indigo-800', 'selected');
+    }
+
+    // --- CAMBIO FRAZIONE SPICCHI ---
+    function setFrazione(n) {
+      playSound('click');
+      numSpicchi = n;
+
+      // Aggiorna stile bottoni
+      [2, 4, 8].forEach(num => {
+        const btn = document.getElementById(`btnFrac${num}`);
+        if (num === n) {
+          btn.className = "btn-action bg-amber-500 text-indigo-950 font-black text-xs md:text-sm px-3 py-2 rounded-xl border-2 border-yellow-300 shadow";
+        } else {
+          btn.className = "btn-action bg-indigo-700 text-white font-black text-xs md:text-sm px-3 py-2 rounded-xl border-2 border-indigo-400 shadow";
+        }
+      });
+
+      pulisciPizza();
+    }
+
+    function pulisciPizza() {
+      spicchiData = Array.from({ length: numSpicchi }, () => []);
+      renderPizza();
+      calcolaPrezzoPizza();
+    }
+
+    // --- RENDER SVG PIZZA ---
+    function renderPizza() {
+      const svg = document.getElementById('pizzaSvg');
+      svg.innerHTML = '';
+
+      const cx = 150, cy = 150, r = 130;
+
+      // Base della pizza (crosta)
+      const crust = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      crust.setAttribute("cx", cx); crust.setAttribute("cy", cy); crust.setAttribute("r", r);
+      crust.setAttribute("fill", "#d97706"); crust.setAttribute("stroke", "#78350f"); crust.setAttribute("stroke-width", "8");
+      svg.appendChild(crust);
+
+      // Formaggio base
+      const cheese = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      cheese.setAttribute("cx", cx); cheese.setAttribute("cy", cy); cheese.setAttribute("r", r - 12);
+      cheese.setAttribute("fill", "#fef08a");
+      svg.appendChild(cheese);
+
+      // Disegna ogni spicchio come fetta di torta SVG
+      const angleStep = (2 * Math.PI) / numSpicchi;
+
+      for (let i = 0; i < numSpicchi; i++) {
+        const startAngle = i * angleStep - Math.PI / 2;
+        const endAngle = (i + 1) * angleStep - Math.PI / 2;
+
+        const x1 = cx + (r - 12) * Math.cos(startAngle);
+        const y1 = cy + (r - 12) * Math.sin(startAngle);
+        const x2 = cx + (r - 12) * Math.cos(endAngle);
+        const y2 = cy + (r - 12) * Math.sin(endAngle);
+
+        const largeArc = angleStep > Math.PI ? 1 : 0;
+        const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r - 12} ${r - 12} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+        const slicePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        slicePath.setAttribute("d", pathData);
+        slicePath.setAttribute("fill", "transparent");
+        slicePath.setAttribute("stroke", "#b45309");
+        slicePath.setAttribute("stroke-width", "3");
+        slicePath.setAttribute("class", "slice-hover");
+        slicePath.onclick = () => onSliceClick(i);
+
+        svg.appendChild(slicePath);
+
+        // Disegna ingredienti presenti nello spicchio
+        const midAngle = startAngle + angleStep / 2;
+        const items = spicchiData[i] || [];
+
+        items.forEach((ing, ingIdx) => {
+          // Posiziona l'emoji al centro dello spicchio
+          const distFactor = 0.45 + (ingIdx * 0.18);
+          const ingX = cx + (r - 12) * distFactor * Math.cos(midAngle);
+          const ingY = cy + (r - 12) * distFactor * Math.sin(midAngle);
+
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", ingX);
+          text.setAttribute("y", ingY + 5);
+          text.setAttribute("font-size", "22");
+          text.setAttribute("text-anchor", "middle");
+          text.setAttribute("pointer-events", "none");
+          text.textContent = ing.emoji;
+          svg.appendChild(text);
+        });
+      }
+    }
+
+    function onSliceClick(sliceIdx) {
+      if (!selectedIngredient) {
+        alert("PRIMA SELEZIONA UN INGREDIENTE DA SINISTRA!");
+        return;
+      }
+
+      playSound('add');
+      if (!spicchiData[sliceIdx]) spicchiData[sliceIdx] = [];
+
+      // Evita duplicati dello stesso ingrediente nello stesso spicchio
+      const exists = spicchiData[sliceIdx].some(ing => ing.id === selectedIngredient.id);
+      if (!exists && spicchiData[sliceIdx].length < 3) {
+        spicchiData[sliceIdx].push(selectedIngredient);
+      }
+
+      renderPizza();
+      calcolaPrezzoPizza();
+    }
+
+    // --- CALCOLO PREZZO PIZZA ---
+    function calcolaPrezzoPizza() {
+      let prezzoBase = 4.00; // Prezzo base pizza
+      let costoIngredienti = 0;
+
+      spicchiData.forEach(items => {
+        items.forEach(ing => {
+          costoIngredienti += (ing.price / numSpicchi);
+        });
+      });
+
+      const totale = prezzoBase + costoIngredienti;
+      document.getElementById('pizzaPriceDisplay').innerText = `${totale.toFixed(2).replace('.', ',')} €`;
+      return parseFloat(totale.toFixed(2));
+    }
+
+    // --- GENERATORE DI ORDINAZIONI E CLIENTI ---
+    function prossimoCliente() {
+      pulisciPizza();
+      azzeraResto();
+
+      // Scegli cliente
+      currentClient = CLIENTS[Math.floor(Math.random() * CLIENTS.length)];
+      document.getElementById('customerAvatar').innerText = currentClient.avatar;
+      document.getElementById('customerName').innerText = `CLIENTE: ${currentClient.name}`;
+
+      // Genera richiesta frazionata
+      // Esempio: 2/4 con Pomodoro e Mozzarella e 2/4 con Salame
+      const fracsPossible = [2, 4, 8];
+      const targetFrac = fracsPossible[Math.floor(Math.random() * fracsPossible.length)];
+      
+      const ingr1 = ALL_INGREDIENTS[Math.floor(Math.random() * ALL_INGREDIENTS.length)];
+      let ingr2 = ALL_INGREDIENTS[Math.floor(Math.random() * ALL_INGREDIENTS.length)];
+      while(ingr2.id === ingr1.id) {
+        ingr2 = ALL_INGREDIENTS[Math.floor(Math.random() * ALL_INGREDIENTS.length)];
+      }
+
+      const meta = targetFrac / 2;
+
+      currentOrder = {
+        targetFrac: targetFrac,
+        parte1: { count: meta, ingredient: ingr1 },
+        parte2: { count: meta, ingredient: ingr2 }
+      };
+
+      document.getElementById('customerOrderText').innerText = 
+        `"DIVIDI IN ${targetFrac} SPICCHI (1/${targetFrac}): VORREI ${meta}/${targetFrac} CON ${ingr1.name} E ${meta}/${targetFrac} CON ${ingr2.name}!"`;
+
+      // Simula banconota cliente (es: 10€ o 20€)
+      const pagamenti = [10.00, 20.00];
+      currentOrder.pagato = pagamenti[Math.floor(Math.random() * pagamenti.length)];
+      document.getElementById('paymentInfo').innerText = `PAGA CON: ${currentOrder.pagato.toFixed(2).replace('.', ',')} €`;
+    }
+
+    // --- CASSA E RESTO ---
+    function aggiungiResto(val) {
+      playSound('click');
+      restoDato += val;
+      document.getElementById('restoGivenDisplay').innerText = `${restoDato.toFixed(2).replace('.', ',')} €`;
+    }
+
+    function azzeraResto() {
+      restoDato = 0.00;
+      document.getElementById('restoGivenDisplay').innerText = "0,00 €";
+    }
+
+    // --- VERIFICA E CONSEGNA ORDINE ---
+    function consegnaOrdine() {
+      // 1. Verifica frazione taglio
+      if (numSpicchi !== currentOrder.targetFrac) {
+        gameOver(`LA PIZZI ANDAVA DIVISA IN ${currentOrder.targetFrac} SPICCHI (1/${currentOrder.targetFrac}), MA L'HAI TAGLIATA IN ${numSpicchi}!`);
+        return;
+      }
+
+      // 2. Verifica ingredienti per ciascuna metà
+      let countIngr1 = 0;
+      let countIngr2 = 0;
+
+      spicchiData.forEach(items => {
+        const has1 = items.some(i => i.id === currentOrder.parte1.ingredient.id);
+        const has2 = items.some(i => i.id === currentOrder.parte2.ingredient.id);
+        if (has1) countIngr1++;
+        if (has2) countIngr2++;
+      });
+
+      if (countIngr1 !== currentOrder.parte1.count || countIngr2 !== currentOrder.parte2.count) {
+        gameOver(`GLI INGREDIENTI SULLA PIZZA NON RISPETTANO LA FRAZIONE RICHIESTA! (${currentOrder.parte1.count}/${numSpicchi} ${currentOrder.parte1.ingredient.name} E ${currentOrder.parte2.count}/${numSpicchi} ${currentOrder.parte2.ingredient.name})`);
+        return;
+      }
+
+      // 3. Verifica resto dato
+      const prezzoEffettivo = calcolaPrezzoPizza();
+      const restoEsatto = parseFloat((currentOrder.pagato - prezzoEffettivo).toFixed(2));
+
+      if (Math.abs(restoDato - restoEsatto) > 0.01) {
+        gameOver(`RESTO ERROCollaborazione! IL PREZZO ERA ${prezzoEffettivo.toFixed(2)}€ E IL CLIENTE HA PAGATO CON ${currentOrder.pagato.toFixed(2)}€. IL RESTO GIUSTO ERA ${restoEsatto.toFixed(2)}€, MA TU HAI DATO ${restoDato.toFixed(2)}€!`);
+        return;
+      }
+
+      // VITTORIA PER IL CLIENTE CORRENTE!
+      playSound('cash');
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      incassoTotale += prezzoEffettivo;
+      document.getElementById('scoreDisplay').innerText = `${incassoTotale.toFixed(2).replace('.', ',')} €`;
+
+      setTimeout(() => {
+        alert("🎉 PIZZA E RESTO CORRETTI! IL CLIENTE È SODDISFATTO!");
+        prossimoCliente();
+      }, 300);
+    }
+
+    function gameOver(motivo) {
+      playSound('error');
+      document.getElementById('gameOverReason').innerText = motivo;
+      document.getElementById('finalScoreDisplay').innerText = `${incassoTotale.toFixed(2).replace('.', ',')} €`;
+      document.getElementById('gameOverModal').classList.remove('hidden');
+      document.getElementById('gameOverModal').classList.add('flex');
+    }
+
+    function chiudiGameOverModal() {
+      document.getElementById('gameOverModal').classList.add('hidden');
+      document.getElementById('gameOverModal').classList.remove('flex');
+    }
+  </script>
+</body>
+</html>
